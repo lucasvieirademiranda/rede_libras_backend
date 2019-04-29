@@ -360,7 +360,7 @@ router.post('/addDislike', function(request, response) {
 
     var id = parseInt(request.body.id, 10);
 
-    signService.addLike(id, function(error, data) {
+    signService.addDislike(id, function(error, data) {
 
         if (error)
         {

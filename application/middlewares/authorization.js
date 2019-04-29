@@ -8,6 +8,7 @@ module.exports = function () {
             '/account/login',
             '/sign/searchBySign',
             '/sign/searchByCategory',
+            '/sign/searchByImage',
             '/sign/download',
             '/sign/addLike',
             '/sign/getLikes',

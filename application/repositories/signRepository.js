@@ -486,7 +486,7 @@ exports.getLikes = (id, done) => {
 
 };
 
-exports.addDislike = (done) => {
+exports.addDislike = (id, done) => {
 
     var sql = 'UPDATE SIGNS SET DISLIKE = (DISLIKE + 1) WHERE ID = ?';
 
