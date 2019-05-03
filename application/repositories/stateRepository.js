@@ -1,10 +1,10 @@
-var connection = global.connection;
+var pool = global.pool;
 
 exports.dropDownList = (id, done) => {
 
     var sql = 'SELECT * FROM STATES WHERE ID_REGION = ?';
 
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.query(sql, [id], function(error, results, fields) {
        
         if (error)
         {

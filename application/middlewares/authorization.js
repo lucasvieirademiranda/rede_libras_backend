@@ -10,6 +10,7 @@ module.exports = function () {
             '/sign/searchByCategory',
             '/sign/searchByImage',
             '/sign/download',
+            '/hand/download',
             '/sign/addLike',
             '/sign/getLikes',
             '/sign/addDislike',

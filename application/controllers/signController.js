@@ -1,7 +1,7 @@
 var express = require('express');
 
 var signService = require('../services/signService');
-var videoService = require('../services/videoService');
+var fileService = require('../services/fileService');
 
 var router = express.Router();
 
@@ -49,6 +49,8 @@ router.post('/create', function(request, response) {
 
     var file = request.files.file;
 
+    var hand = request.body.hand ? parseInt(JSON.parse(request.body.hand).value, 10) : null;
+
     var region = request.body.region ? parseInt(JSON.parse(request.body.region).value, 10) : null;
 
     var states = request.body.states ? JSON.parse(request.body.states).map((state) => { return state.value; }) : [];
@@ -60,6 +62,7 @@ router.post('/create', function(request, response) {
         sign: request.body.sign,
         example: request.body.example,
         isGeneral: parseInt(request.body.isGeneral, 10),
+        idHand: hand,
         idRegion: region,
         states: states,
         categories: categories,
@@ -67,7 +70,7 @@ router.post('/create', function(request, response) {
         video_path: ''
     };
 
-    videoService.upload(file, function(error, data) {
+    fileService.upload(file, process.env.VIDEO_DIR, function(error, data) {
 
         if (error)
         {
@@ -103,6 +106,8 @@ router.patch('/edit', function(request, response) {
 
     var file = request.files ? request.files.file : null;
 
+    var hand = request.body.hand ? parseInt(JSON.parse(request.body.hand).value, 10) : null;
+
     var region = request.body.region ? parseInt(JSON.parse(request.body.region).value, 10) : null;
 
     var states = request.body.states ? JSON.parse(request.body.states).map((state) => { return state.value; }) : [];
@@ -115,6 +120,7 @@ router.patch('/edit', function(request, response) {
         sign: request.body.sign,
         example: request.body.example,
         isGeneral: parseInt(request.body.isGeneral, 10),
+        idHand: hand,
         idRegion: region,
         states: states,
         categories: categories,
@@ -124,7 +130,7 @@ router.patch('/edit', function(request, response) {
 
     if (file)
     {
-        videoService.delete(sign.video_path, function(error, data) {
+        fileService.delete(sign.video_path, function(error, data) {
 
             if (error)
             {
@@ -134,7 +140,7 @@ router.patch('/edit', function(request, response) {
                 return;
             }
 
-            videoService.upload(file, function(error, data) {
+            fileService.upload(file, process.env.VIDEO_DIR, function(error, data) {
 
                 if (error)
                 {
@@ -201,7 +207,7 @@ router.delete('/remove/:id', function(request, response) {
             return;
         }
 
-        videoService.delete(data.video_path, function(error, data) {
+        fileService.delete(data.video_path, function(error, data) {
 
             if (error)
             {

@@ -1,43 +1,8 @@
 var pool = global.pool;
 
-exports.login = (data, done) => {
-
-    var sql = 'SELECT * FROM USERS WHERE USER = ? AND PASSWORD = ? LIMIT 1'
-
-    pool.query(sql, [data.user, data.password], function(error, results, fields) {
-
-        if (error)
-        {
-            done({
-                code: 500,
-                message: "Não foi possível acessar a base de dados!!"
-            }, null)
-
-            return;
-        }
-
-        if (results.length > 0)
-        {
-            var data = {
-                id: results[0].ID,
-                name: results[0].NAME,
-                user: results[0].USER,
-                password: results[0].PASSWORD,
-                mail: results[0].MAIL
-            };
-    
-            done(null, data);
-        }
-        else
-            done(null, null);
-
-    });
-
-}
-
 exports.find = (id, done) => {
 
-    var sql = 'SELECT * FROM USERS WHERE ID = ? LIMIT 1';
+    var sql = 'SELECT * FROM HANDS WHERE ID = ? LIMIT 1';
 
     pool.query(sql, [id], function(error, results, fields) {
 
@@ -56,9 +21,9 @@ exports.find = (id, done) => {
             var data = {
                 id: results[0].ID,
                 name: results[0].NAME,
-                user: results[0].USER,
-                password: results[0].PASSWORD,
-                mail: results[0].MAIL
+                description: results[0].DESCRIPTION,
+                image_name: results[0].IMAGE_NAME,
+                image_path: results[0].IMAGE_PATH
             };
     
             done(null, data);
@@ -72,9 +37,9 @@ exports.find = (id, done) => {
 
 exports.list = (done) => {
 
-    var sql = 'SELECT * FROM USERS';
+    var sql = 'SELECT * FROM HANDS';
 
-    pool.query(sql, [], function(error, results, fields) {
+    pool.query(sql, function(error, results, fields) {
 
         if (error)
         {
@@ -88,21 +53,19 @@ exports.list = (done) => {
 
         if (results.length > 0)
         {
-
             var data = results.map((result) => {
 
                 return {
                     id: result.ID,
                     name: result.NAME,
-                    user: result.USER,
-                    password: result.PASSWORD,
-                    mail: result.MAIL
+                    description: result.DESCRIPTION,
+                    image_name: result.IMAGE_NAME,
+                    image_path: result.IMAGE_PATH
                 };
-    
+
             });
     
             done(null, data);
-
         }
         else
             done(null, []);
@@ -111,15 +74,15 @@ exports.list = (done) => {
 
 };
 
-exports.insert = (user, done) => {
+exports.insert = (hand, done) => {
 
-    var sql = 'INSERT INTO USERS (NAME, USER, PASSWORD, MAIL) VALUES (?, ?, ?, ?)';
+    var sql = 'INSERT INTO HANDS (NAME, DESCRIPTION, IMAGE_NAME, IMAGE_PATH) VALUES (?, ?, ?, ?)';
 
     var data = [
-        user.name,
-        user.user,
-        user.password,
-        user.mail
+        hand.name,
+        hand.description,
+        hand.image_name,
+        hand.image_path
     ];
 
     pool.query(sql, data, function(error, results, fields) {
@@ -134,12 +97,12 @@ exports.insert = (user, done) => {
             return;
         }
 
-        var data = { 
+        var data = {
             id: results.insertId,
-            name: user.name,
-            user: user.user,
-            password: user.password,
-            mail: user.mail
+            name: hand.name,
+            description: hand.description,
+            image_name: hand.image_name,
+            image_path: hand.image_path
         };
 
         done(null, data);
@@ -148,16 +111,16 @@ exports.insert = (user, done) => {
 
 };
 
-exports.update = (user, done) => {
+exports.update = (hand, done) => {
 
-    var sql = 'UPDATE USERS SET NAME = ?, USER = ?, MAIL = ? WHERE ID = ?';
+    var sql = 'UPDATE HANDS SET NAME = ?, DESCRIPTION = ?, IMAGE_NAME = ?, IMAGE_PATH = ? WHERE ID = ?';
 
     var data = [
-        user.name,
-        user.user,
-        user.password,
-        user.mail,
-        user.id
+        hand.name,
+        hand.description,
+        hand.image_name,
+        hand.image_path,
+        hand.id
     ];
 
     pool.query(sql, data, function(error, results, fields) {
@@ -172,12 +135,12 @@ exports.update = (user, done) => {
             return;
         }
 
-        var data = { 
-            id: user.id,
-            name: user.name,
-            user: user.user,
-            password: user.password,
-            mail: user.mail
+        var data = {
+            id: hand.id,
+            name: hand.name,
+            description: hand.description,
+            image_name: hand.image_name,
+            image_path: hand.image_path
         };
 
         done(null, data);
@@ -200,9 +163,9 @@ exports.delete = (id, done) => {
             return;
         }
 
-        var sql = 'SELECT * FROM USERS WHERE ID = ? LIMIT 1';
+        var sql = 'SELECT * FROM HANDS WHERE ID = ? LIMIT 1';
 
-        connection.query(sql, [id], function(error, results, fields) {
+        connection.query(sql, [id], function(error, results1, fields) {
 
             if (error)
             {
@@ -214,12 +177,10 @@ exports.delete = (id, done) => {
                 return;
             }
     
-            var results1 = results;
+            var sql = 'DELETE FROM HANDS WHERE ID = ?';
     
-            var sql = 'DELETE FROM USERS WHERE ID = ?';
+            connection.query(sql, [id], function(error, results2, fields) {
     
-            connection.query(sql, [id], function(error, results, fields) {
-        
                 connection.release();
 
                 if (error)
@@ -232,30 +193,31 @@ exports.delete = (id, done) => {
                     return;
                 }
         
-                var data = { 
+                var data = {
                     id: results1[0].ID,
                     name: results1[0].NAME,
-                    user: results1[0].USER,
-                    password: results1[0].PASSWORD,
-                    mail: results1[0].MAIL
-                };
-    
+                    description: results1[0].DESCRIPTION,
+                    file_name: results1[0].IMAGE_NAME,
+                    file_path: results1[0].IMAGE_PATH,
+                }
+        
                 done(null, data);
         
             });
     
-    
         });
 
     });
-
 };
 
-exports.findByUser = (user, done) => {
+exports.dropDownList = (name, done) => {
 
-    var sql = 'SELECT * FROM USERS WHERE UPPER(USER) = UPPER(?)';
+    var sql = 'SELECT * FROM HANDS';
 
-    pool.query(sql, [user], function(error, results, fields) {
+    if (name)
+        sql += ' WHERE UPPER(NAME) LIKE UPPER(?)';
+
+    pool.query(sql, [name + '%'], function(error, results, fields) {
 
         if (error)
         {
@@ -269,28 +231,29 @@ exports.findByUser = (user, done) => {
 
         if (results.length > 0)
         {
-            var data = {
-                id: results[0].ID,
-                name: results[0].NAME,
-                user: results[0].USER,
-                password: results[0].PASSWORD,
-                mail: results[0].MAIL
-            };
+            var data = results.map((result) => {
+
+                return {
+                    value: result.ID,
+                    label: result.NAME
+                };
+
+            });
     
             done(null, data);
         }
         else
-            done(null, null);
+            done(null, []);
 
     });
 
 };
 
-exports.findByMail = (mail, done) => {
+exports.findByName = (name, done) => {
 
-    var sql = 'SELECT * FROM USERS WHERE UPPER(MAIL) = UPPER(?)';
+    var sql = 'SELECT * FROM HANDS WHERE UPPER(NAME) = UPPER(?)';
 
-    pool.query(sql, [mail], function(error, results, fields) {
+    pool.query(sql, [name], function(error, results, fields) {
 
         if (error)
         {
@@ -307,9 +270,9 @@ exports.findByMail = (mail, done) => {
             var data = {
                 id: results[0].ID,
                 name: results[0].NAME,
-                user: results[0].USER,
-                password: results[0].PASSWORD,
-                mail: results[0].MAIL
+                description: results[0].DESCRIPTION,
+                image_name: results[0].IMAGE_NAME,
+                image_path: results[0].IMAGE_PATH
             };
     
             done(null, data);

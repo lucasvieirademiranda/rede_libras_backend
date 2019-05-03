@@ -11,7 +11,7 @@ router.use('/create', function(request, response, next) {
 
     request.checkBody('isGeneral', 'Você deve informar se o sinal é nacional ou regional!').notEmpty();
 
-    if (request.body.isGeneral == "false")
+    if (request.body.isGeneral == "0")
     {
         request.checkBody('region', 'Você deve informar uma região!').notEmpty();
 
@@ -19,6 +19,8 @@ router.use('/create', function(request, response, next) {
     }
 
     request.checkBody('categories', 'Você deve informar uma ou mais categorias!').notEmpty();
+
+    request.checkBody("hand", "Você deve informar uma configuração de mão!").notEmpty();
 
     var errors = !request.validationErrors() ? [] : request.validationErrors();
 
@@ -54,7 +56,7 @@ router.use('/edit', function(request, response, next) {
 
     request.checkBody('isGeneral', 'Você deve informar se o sinal é nacional ou regional!').notEmpty();
 
-    if (request.body.isGeneral == "false")
+    if (request.body.isGeneral == "0")
     {
         request.checkBody('region', 'Você deve informar uma região!').notEmpty();
 
@@ -62,6 +64,8 @@ router.use('/edit', function(request, response, next) {
     }
 
     request.checkBody('categories', 'Você deve informar uma ou mais categorias!').notEmpty();
+
+    request.checkBody("hand", "Você deve informar uma configuração de mão!").notEmpty();
 
     var errors = request.validationErrors();
 

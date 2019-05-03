@@ -42,39 +42,35 @@ var os = require("os");
         user: process.env.DATABASE_USER,
         password: process.env.DATABASE_PASSWORD,
         database: process.env.DATABASE,
+        connectionLimit: 100,
         multipleStatements: true,
         insecureAuth : true
     });
 
-    pool.getConnection(function(error, connection) {
-        
-        if (error) throw error;
+    global.pool = pool;
 
-        global.connection = connection;
+    var application = express();
 
-        var application = express();
+    application.use(cors());
 
-        application.use(cors());
-
-        //application.use(helmet());
-       
-        application.use(bodyParser.json());
-       
-        application.use(bodyParser.urlencoded({ extended: true }));
-       
-        application.use(fileUpload({
-            limits: { fileSize: 50 * 1024 * 1024 } //bytes
-        }));
-       
-        application.use(authorization());
-       
-        application.use(expressValidator([]));
+    //application.use(helmet());
     
-        loader.start(application);
+    application.use(bodyParser.json());
     
-        http.createServer(application)
-            .listen(process.env.APP_PORT, process.env.APP_IP);
+    application.use(bodyParser.urlencoded({ extended: true }));
+    
+    application.use(fileUpload({
+        limits: { fileSize: 50 * 1024 * 1024 } //bytes
+    }));
+    
+    application.use(authorization());
+    
+    application.use(expressValidator([]));
 
-        console.log("Server is running!");
-    });
+    loader.start(application);
+
+    http.createServer(application)
+        .listen(process.env.APP_PORT, process.env.APP_IP);
+
+    console.log("Server is running!");
 //}

@@ -2,19 +2,19 @@ var fs = require('fs');
 var path = require('path');
 var uuid = require('uuid');
 
-exports.upload = (upload, done) => {
+exports.upload = (upload, folder, done) => {
 
-    fs.access(process.env.VIDEO_DIR, fs.constants.F_OK, (error) => {
+    fs.access(folder, fs.constants.F_OK, (error) => {
 
         if (error)
         {
-            fs.mkdir(process.env.VIDEO_DIR, (error) => {
+            fs.mkdir(folder, (error) => {
 
                 if (error)
                 {
                     done({
                         code: 500,
-                        message: "Não foi possível acessar o disco para preparar o diretório de persistência de vídeos!!"
+                        message: "Não foi possível acessar o disco para preparar o diretório de persistência de arquivos!!"
                     }, null);
 
                     return;
@@ -23,7 +23,7 @@ exports.upload = (upload, done) => {
                 var filename = uuid();
                 var extension = path.extname(upload.name);
     
-                var dir = path.join(process.env.VIDEO_DIR, filename + extension);
+                var dir = path.join(folder, filename + extension);
 
                 upload.mv(dir, (error) => {
 
@@ -31,7 +31,7 @@ exports.upload = (upload, done) => {
                     {
                         done({
                             code: 500,
-                            message: "Não foi possível acessar o disco para persistir o vídeo!!"
+                            message: "Não foi possível acessar o disco para persistir o arquivo!!"
                         }, null);
 
                         return;
@@ -48,7 +48,7 @@ exports.upload = (upload, done) => {
             var filename = uuid();
             var extension = path.extname(upload.name);
 
-            var dir = path.join(process.env.VIDEO_DIR, filename + extension);
+            var dir = path.join(folder, filename + extension);
 
             upload.mv(dir, (error) => {
 
@@ -56,7 +56,7 @@ exports.upload = (upload, done) => {
                 {
                     done({
                         code: 500,
-                        message: "Não foi possível acessar o disco para persistir o vídeo!!"
+                        message: "Não foi possível acessar o disco para persistir o arquivo!!"
                     }, null);
                     return;
                 }
@@ -70,9 +70,9 @@ exports.upload = (upload, done) => {
 
 };
 
-exports.delete = (path, done) => {
+exports.delete = (folder, done) => {
 
-    fs.unlink(path, (error) => {
+    fs.unlink(folder, (error) => {
 
         if (error)
         {

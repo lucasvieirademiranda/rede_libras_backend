@@ -1,10 +1,10 @@
-var connection = global.connection;
+var pool = global.pool;
 
 exports.find = (id, done) => {
 
     var sql = 'SELECT * FROM CATEGORIES WHERE ID = ? LIMIT 1';
 
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.query(sql, [id], function(error, results, fields) {
 
         if (error)
         {
@@ -37,7 +37,7 @@ exports.list = (done) => {
 
     var sql = 'SELECT * FROM CATEGORIES';
 
-    connection.query(sql, function(error, results, fields) {
+    pool.query(sql, function(error, results, fields) {
 
         if (error)
         {
@@ -79,7 +79,7 @@ exports.insert = (category, done) => {
         category.description
     ];
 
-    connection.query(sql, data, function(error, results, fields) {
+    pool.query(sql, data, function(error, results, fields) {
 
         if (error)
         {
@@ -113,7 +113,7 @@ exports.update = (category, done) => {
         category.id
     ];
 
-    connection.query(sql, data, function(error, results, fields) {
+    pool.query(sql, data, function(error, results, fields) {
 
         if (error)
         {
@@ -141,7 +141,7 @@ exports.delete = (id, done) => {
 
     var sql = 'SELECT * FROM CATEGORIES WHERE ID = ? LIMIT 1';
 
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.getConnection(function(error, connection) {
 
         if (error)
         {
@@ -152,10 +152,6 @@ exports.delete = (id, done) => {
 
             return;
         }
-
-        var results1 = results;
-
-        var sql = 'DELETE FROM CATEGORIES WHERE ID = ?';
 
         connection.query(sql, [id], function(error, results, fields) {
 
@@ -169,25 +165,44 @@ exports.delete = (id, done) => {
                 return;
             }
     
-            var data = {
-                id: results1[0].ID,
-                name: results1[0].NAME,
-                description: results1[0].DESCRIPTION,
-            }
+            var results1 = results;
     
-            done(null, data);
+            var sql = 'DELETE FROM CATEGORIES WHERE ID = ?';
+    
+            connection.query(sql, [id], function(error, results, fields) {
+    
+                connection.release();
+
+                if (error)
+                {
+                    done({
+                        code: 500,
+                        message: "Não foi possível acessar a base de dados!!"
+                    }, null);
+        
+                    return;
+                }
+        
+                var data = {
+                    id: results1[0].ID,
+                    name: results1[0].NAME,
+                    description: results1[0].DESCRIPTION,
+                }
+        
+                done(null, data);
+        
+            });
     
         });
 
     });
-
 };
 
 exports.dropDownList = (done) => {
 
     var sql = 'SELECT * FROM CATEGORIES';
 
-    connection.query(sql, function(error, results, fields) {
+    pool.query(sql, function(error, results, fields) {
 
         if (error)
         {
@@ -223,7 +238,7 @@ exports.findByName = (name, done) => {
 
     var sql = 'SELECT * FROM CATEGORIES WHERE UPPER(NAME) = UPPER(?)';
 
-    connection.query(sql, [name], function(error, results, fields) {
+    pool.query(sql, [name], function(error, results, fields) {
 
         if (error)
         {

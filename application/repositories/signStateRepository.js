@@ -1,4 +1,4 @@
-var connection = global.connection;
+var pool = global.pool;
 
 exports.insertAll = (data, done) => {
 
@@ -8,7 +8,7 @@ exports.insertAll = (data, done) => {
 
     var sql = inserts.join(";");
 
-    connection.query(sql, function(error, results, fields) {
+    pool.query(sql, function(error, results, fields) {
 
         if (error)
         {
@@ -30,7 +30,7 @@ exports.deleteAll = (id, done) => {
 
     var sql = "DELETE FROM SIGNS_STATES WHERE ID_SIGN = ?";
 
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.query(sql, [id], function(error, results, fields) {
 
         if (error)
         {

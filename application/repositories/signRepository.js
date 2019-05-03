@@ -1,10 +1,8 @@
-var connection = global.connection;
+var pool = global.pool;
 
 exports.find = (id, done) => {
 
-    var sql = 'SELECT * FROM SIGNS WHERE ID = ? LIMIT 1';
-
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.getConnection(function(error, connection) {
 
         if (error)
         {
@@ -16,74 +14,105 @@ exports.find = (id, done) => {
             return;
         }
 
-        var sign = {
-            id: results[0].ID,
-            sign: results[0].SIGN,
-            example: results[0].EXAMPLE,
-            isGeneral: results[0].IS_GENERAL,
-            like: results[0].LIKE,
-            dislike: results[0].DISLIKE,
-            region: '',
-            states: [],
-            categories: [],
-            file_name: results[0].FILE_NAME,
-            video_path: results[0].VIDEO_PATH,
-            idRegion: results[0].ID_REGION
-        };
+        var sql = 'SELECT * FROM SIGNS WHERE ID = ? LIMIT 1';
 
-        var queries = [
-            'SELECT ID, NAME FROM REGIONS WHERE ID = ' + sign.idRegion + ' LIMIT 1',
-            'SELECT S.ID, S.NAME, S.ACRONYM FROM STATES S INNER JOIN SIGNS_STATES SS ON S.ID = SS.ID_STATE WHERE SS.ID_SIGN = ' + sign.id,
-            'SELECT C.ID, C.NAME FROM CATEGORIES C INNER JOIN SIGNS_CATEGORIES SC ON C.ID = SC.ID_CATEGORY WHERE SC.ID_SIGN = ' + sign.id
-        ];
-
-        connection.query(queries.join(';'), function(error, results, fields) {
-
+        connection.query(sql, [id], function(error, results, fields) {
+    
             if (error)
             {
                 done({
                     code: 500,
-                    message: "Ocorreu um erro ao acessar a base de dados!!"
+                    message: "Não foi possível acessar a base de dados!!"
                 }, null);
-
+    
                 return;
             }
+    
+            var sign = {
+                id: results[0].ID,
+                sign: results[0].SIGN,
+                example: results[0].EXAMPLE,
+                isGeneral: results[0].IS_GENERAL,
+                like: results[0].LIKE,
+                dislike: results[0].DISLIKE,
+                region: '',
+                states: [],
+                categories: [],
+                file_name: results[0].FILE_NAME,
+                video_path: results[0].VIDEO_PATH,
+                idRegion: results[0].ID_REGION,
+                idHand: results[0].ID_HAND
+            };
+    
+            var queries = [
+                'SELECT ID, NAME FROM REGIONS WHERE ID = ' + sign.idRegion + ' LIMIT 1',
+                'SELECT S.ID, S.NAME, S.ACRONYM FROM STATES S INNER JOIN SIGNS_STATES SS ON S.ID = SS.ID_STATE WHERE SS.ID_SIGN = ' + sign.id,
+                'SELECT C.ID, C.NAME FROM CATEGORIES C INNER JOIN SIGNS_CATEGORIES SC ON C.ID = SC.ID_CATEGORY WHERE SC.ID_SIGN = ' + sign.id,
+                'SELECT ID, NAME FROM HANDS WHERE ID = ' + sign.idHand + ' LIMIT 1'
+            ];
+    
+            connection.query(queries.join(';'), function(error, results, fields) {
+    
+                connection.release();
 
-            if (results[0].length > 0)
-            {
-                var region = results[0].map((region) => {
-                    return {
-                        value: region.ID,
-                        label: region.NAME
-                    }
-                });
-
-                sign.region = region;
-            }
-
-            if (results[1].length > 0)
-            {
-                var states = results[1].map((state) => {
-                    return {
-                        value: state.ID,
-                        label: state.NAME + " (" + state.ACRONYM + ")"
-                    }
-                });
-
-                sign.states = states;
-            }
-
-            var categories = results[2].map((category) => {
-                return {
-                    value: category.ID,
-                    label: category.NAME
+                if (error)
+                {
+                    done({
+                        code: 500,
+                        message: "Ocorreu um erro ao acessar a base de dados!!"
+                    }, null);
+    
+                    return;
                 }
+    
+                if (results[0].length > 0)
+                {
+                    var region = results[0].map((region) => {
+                        return {
+                            value: region.ID,
+                            label: region.NAME
+                        }
+                    });
+    
+                    sign.region = region;
+                }
+    
+                if (results[1].length > 0)
+                {
+                    var states = results[1].map((state) => {
+                        return {
+                            value: state.ID,
+                            label: state.NAME + " (" + state.ACRONYM + ")"
+                        }
+                    });
+    
+                    sign.states = states;
+                }
+    
+                var categories = results[2].map((category) => {
+                    return {
+                        value: category.ID,
+                        label: category.NAME
+                    }
+                });
+    
+                sign.categories = categories;
+
+                var hand = results[3].map((hand) => {
+
+                    return {
+                        value: hand.ID,
+                        label: hand.NAME
+                    };
+
+                });
+
+                sign.hand = hand;
+    
+                done(null, sign);
+    
             });
-
-            sign.categories = categories;
-
-            done(null, sign);
-
+    
         });
 
     });
@@ -94,7 +123,7 @@ exports.list = (done) => {
 
     var sql = 'SELECT * FROM SIGNS';
 
-    connection.query(sql, function(error, results, fields) {
+    pool.query(sql, function(error, results, fields) {
 
         if (error)
         {
@@ -117,7 +146,8 @@ exports.list = (done) => {
                     isGeneral: result.IS_GENERAL,
                     file_name: result.FILE_NAME,
                     video_path: result.VIDEO_PATH,
-                    idRegion: result.ID_REGION
+                    idRegion: result.ID_REGION,
+                    idHand: result.ID_HAND
                 };
 
             });
@@ -133,7 +163,7 @@ exports.list = (done) => {
 
 exports.insert = (sign, done) => {
 
-    var sql = 'INSERT INTO SIGNS (SIGN, EXAMPLE, IS_GENERAL, FILE_NAME, VIDEO_PATH, ID_REGION) VALUES (?, ?, ?, ?, ?, ?)';
+    var sql = 'INSERT INTO SIGNS (SIGN, EXAMPLE, IS_GENERAL, FILE_NAME, VIDEO_PATH, ID_REGION, ID_HAND) VALUES (?, ?, ?, ?, ?, ?, ?)';
 
     var data = [
         sign.sign,
@@ -141,10 +171,11 @@ exports.insert = (sign, done) => {
         sign.isGeneral,
         sign.file_name,
         sign.video_path,
-        sign.idRegion
+        sign.idRegion,
+        sign.idHand
     ];
 
-    connection.query(sql, data, function(error, results, fields) {
+    pool.query(sql, data, function(error, results, fields) {
 
         if (error)
         {
@@ -163,7 +194,8 @@ exports.insert = (sign, done) => {
             isGeneral: sign.isGeneral,
             file_name: sign.file_name,
             video_path: sign.video_path,
-            idRegion: sign.idRegion
+            idRegion: sign.idRegion,
+            idHand: sign.idHand
         };
 
         done(null, data);
@@ -174,7 +206,7 @@ exports.insert = (sign, done) => {
 
 exports.update = (sign, done) => {
 
-    var sql = 'UPDATE SIGNS SET SIGN = ?, EXAMPLE = ?, IS_GENERAL = ?, FILE_NAME = ?, VIDEO_PATH = ?, ID_REGION = ? WHERE ID = ?';
+    var sql = 'UPDATE SIGNS SET SIGN = ?, EXAMPLE = ?, IS_GENERAL = ?, FILE_NAME = ?, VIDEO_PATH = ?, ID_REGION = ?, ID_HAND = ? WHERE ID = ?';
 
     var data = [
         sign.sign,
@@ -183,10 +215,11 @@ exports.update = (sign, done) => {
         sign.file_name,
         sign.video_path,
         sign.idRegion,
+        sign.idHand,
         sign.id
     ];
 
-    connection.query(sql, data, function(error, results, fields) {
+    pool.query(sql, data, function(error, results, fields) {
 
         if (error)
         {
@@ -205,7 +238,8 @@ exports.update = (sign, done) => {
             isGeneral: sign.isGeneral,
             file_name: sign.file_name,
             video_path: sign.video_path,
-            idRegion: sign.idRegion
+            idRegion: sign.idRegion,
+            idHand: sign.idHand
         };
 
         done(null, data);
@@ -216,9 +250,7 @@ exports.update = (sign, done) => {
 
 exports.delete = (id, done) => {
 
-    var sql = 'SELECT * FROM SIGNS WHERE ID = ? LIMIT 1';
-
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.getConnection(function(error, connection) {
 
         if (error)
         {
@@ -230,12 +262,10 @@ exports.delete = (id, done) => {
             return;
         }
 
-        var results1 = results;
-
-        var sql = 'DELETE FROM SIGNS WHERE ID = ?';
+        var sql = 'SELECT * FROM SIGNS WHERE ID = ? LIMIT 1';
 
         connection.query(sql, [id], function(error, results, fields) {
-
+    
             if (error)
             {
                 done({
@@ -246,15 +276,35 @@ exports.delete = (id, done) => {
                 return;
             }
     
-            var data = {
-                id: results1[0].ID,
-                sign: results1[0].SIGN,
-                comments: results1[0].COMMENTS,
-                file_name: results1[0].FILE_NAME,
-                video_path: results1[0].VIDEO_PATH
-            }
+            var results1 = results;
     
-            done(null, data);
+            var sql = 'DELETE FROM SIGNS WHERE ID = ?';
+    
+            connection.query(sql, [id], function(error, results, fields) {
+    
+                connection.release();
+
+                if (error)
+                {
+                    done({
+                        code: 500,
+                        message: "Não foi possível acessar a base de dados!!"
+                    }, null);
+        
+                    return;
+                }
+        
+                var data = {
+                    id: results1[0].ID,
+                    sign: results1[0].SIGN,
+                    example: results1[0].EXAMPLE,
+                    file_name: results1[0].FILE_NAME,
+                    video_path: results1[0].VIDEO_PATH
+                }
+        
+                done(null, data);
+        
+            });
     
         });
 
@@ -266,7 +316,7 @@ exports.searchBySign = (sign, done) => {
 
     var sql = 'SELECT * FROM SIGNS WHERE UPPER(SIGN) LIKE UPPER(?)'
 
-    connection.query(sql, [sign + "%"], function(error, results, fields) {
+    pool.query(sql, [sign + "%"], function(error, results, fields) {
 
         if (error)
         {
@@ -311,7 +361,7 @@ exports.searchByCategory = (category, done) => {
         GROUP BY S.ID
     `;
 
-    connection.query(sql, [category + "%"], function(error, results, fields) {
+    pool.query(sql, [category + "%"], function(error, results, fields) {
 
         if (error)
         {
@@ -356,7 +406,7 @@ exports.searchByImage = (done) => {
         GROUP BY S.ID
     `;
 
-    connection.query(sql, function(error, results, fields) {
+    pool.query(sql, function(error, results, fields) {
 
         if (error)
         {
@@ -395,7 +445,7 @@ exports.findByName = (name, done) => {
 
     var sql = 'SELECT * FROM SIGNS WHERE UPPER(SIGN) = UPPER(?)';
 
-    connection.query(sql, [name], function(error, results, fields) {
+    pool.query(sql, [name], function(error, results, fields) {
 
         if (error)
         {
@@ -412,7 +462,7 @@ exports.findByName = (name, done) => {
             var data = {
                 id: results[0].ID,
                 sign: results[0].SIGN,
-                comments: results[0].COMMENTS,
+                example: results[0].EXAMPLE,
                 file_name: results[0].FILE_NAME,
                 video_path: results[0].VIDEO_PATH
             };
@@ -428,10 +478,8 @@ exports.findByName = (name, done) => {
 
 exports.addLike = (id, done) => {
 
-    var sql = 'UPDATE SIGNS SET `LIKE` = (`LIKE` + 1) WHERE ID = ?';
-
-    connection.query(sql, [id], function(error, results, fields) {
-
+    pool.getConnection(function(error, connection) {
+        
         if (error)
         {
             done({
@@ -442,10 +490,10 @@ exports.addLike = (id, done) => {
             return;
         }
 
-        sql = 'SELECT `LIKE` FROM SIGNS WHERE ID = ? LIMIT 1';
+        var sql = 'UPDATE SIGNS SET `LIKE` = (`LIKE` + 1) WHERE ID = ?';
 
         connection.query(sql, [id], function(error, results, fields) {
-
+    
             if (error)
             {
                 done({
@@ -456,7 +504,25 @@ exports.addLike = (id, done) => {
                 return;
             }
     
-            done(null, { like: results[0].LIKE });
+            sql = 'SELECT `LIKE` FROM SIGNS WHERE ID = ? LIMIT 1';
+    
+            connection.query(sql, [id], function(error, results, fields) {
+    
+                connection.release();
+
+                if (error)
+                {
+                    done({
+                        code: 500,
+                        message: "Não foi possível acessar a base de dados!!"
+                    }, null);
+        
+                    return;
+                }
+        
+                done(null, { like: results[0].LIKE });
+        
+            });
     
         });
 
@@ -468,7 +534,7 @@ exports.getLikes = (id, done) => {
 
     var sql = 'SELECT `LIKE` FROM SIGNS WHERE ID = ? LIMIT 1';
 
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.query(sql, [id], function(error, results, fields) {
 
         if (error)
         {
@@ -488,9 +554,7 @@ exports.getLikes = (id, done) => {
 
 exports.addDislike = (id, done) => {
 
-    var sql = 'UPDATE SIGNS SET DISLIKE = (DISLIKE + 1) WHERE ID = ?';
-
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.getConnection(function(error, connection) {
 
         if (error)
         {
@@ -502,10 +566,10 @@ exports.addDislike = (id, done) => {
             return;
         }
 
-        sql = 'SELECT `DISLIKE` FROM SIGNS WHERE ID = ? LIMIT 1';
+        var sql = 'UPDATE SIGNS SET DISLIKE = (DISLIKE + 1) WHERE ID = ?';
 
         connection.query(sql, [id], function(error, results, fields) {
-    
+
             if (error)
             {
                 done({
@@ -516,7 +580,25 @@ exports.addDislike = (id, done) => {
                 return;
             }
     
-            done(null, { dislike: results[0].DISLIKE });
+            sql = 'SELECT `DISLIKE` FROM SIGNS WHERE ID = ? LIMIT 1';
+    
+            connection.query(sql, [id], function(error, results, fields) {
+        
+                connection.release();
+
+                if (error)
+                {
+                    done({
+                        code: 500,
+                        message: "Não foi possível acessar a base de dados!!"
+                    }, null);
+        
+                    return;
+                }
+        
+                done(null, { dislike: results[0].DISLIKE });
+        
+            });
     
         });
 
@@ -528,7 +610,7 @@ exports.getDislikes = (id, done) => {
 
     var sql = 'SELECT `DISLIKE` FROM SIGNS WHERE ID = ? LIMIT 1';
 
-    connection.query(sql, [id], function(error, results, fields) {
+    pool.query(sql, [id], function(error, results, fields) {
 
         if (error)
         {
